@@ -63,6 +63,7 @@ namespace Editor
                     Debug.Log($"Finished DoBuilding for {platform} [Duration: {StopWatch.Elapsed:g}]");
                 }
 
+                Debug.Log($"Closing Unity....");
                 if (Application.isBatchMode) EditorApplication.Exit(0);
             }
             catch (Exception ex)
@@ -71,13 +72,14 @@ namespace Editor
                 if (Application.isBatchMode) EditorApplication.Exit(1);
             }
         }
+
         private static bool SwitchPlatform(string platform)
         {
             try
             {
                 var target = Enum.Parse<BuildTarget>(platform);
                 var group = BuildPipeline.GetBuildTargetGroup(target);
-                
+
                 EditorUserBuildSettings.SwitchActiveBuildTargetAsync(group, target);
                 return true;
             }
@@ -90,7 +92,9 @@ namespace Editor
 
         private static string GetCommandArg(string name)
         {
-            return Environment.GetCommandLineArgs().FirstOrDefault(arg => arg == name);
+            var args = Environment.GetCommandLineArgs().ToList();
+            var index = args.IndexOf(name);
+            return index >= 0 ? args[index] : string.Empty;
         }
     }
 }
