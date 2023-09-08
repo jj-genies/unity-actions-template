@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Mime;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -20,13 +20,14 @@ namespace Editor
         {
             // dont show stacktrace for normal logs
             Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
-            
+
             try
             {
                 var profile = GetCommandArg("-profile") ?? "default";
-                var platform = GetCommandArg("-platform") ?? EditorUserBuildSettings.activeBuildTarget.ToString();
+                var platformArg = GetCommandArg("-platforms") ?? EditorUserBuildSettings.activeBuildTarget.ToString();
+                var platforms = platformArg.Split(",").ToList();
 
-                DoPreProcessing(profile, () => { DoBuilding(profile); });
+                DoPreProcessing(profile, () => { DoBuilding(profile, platforms); });
             }
             catch (Exception ex)
             {
@@ -48,14 +49,19 @@ namespace Editor
             onPreProcessComplete?.Invoke();
         }
 
-        private static async void DoBuilding(string profile)
+        private static async void DoBuilding(string profile, List<string> platforms)
         {
             try
             {
-                StopWatch.Restart();
-                await Task.Delay(5555);
-                StopWatch.Stop();
-                Debug.Log($"Finished DoBuilding [Duration: {StopWatch.Elapsed:g}]");
+                foreach (var platform in platforms)
+                {
+                    if (!SwitchPlatform(platform)) continue;
+
+                    StopWatch.Restart();
+                    await Task.Delay(5555);
+                    StopWatch.Stop();
+                    Debug.Log($"Finished DoBuilding for {platform} [Duration: {StopWatch.Elapsed:g}]");
+                }
 
                 if (Application.isBatchMode) EditorApplication.Exit(0);
             }
@@ -63,6 +69,22 @@ namespace Editor
             {
                 Debug.LogException(ex);
                 if (Application.isBatchMode) EditorApplication.Exit(1);
+            }
+        }
+        private static bool SwitchPlatform(string platform)
+        {
+            try
+            {
+                var target = Enum.Parse<BuildTarget>(platform);
+                var group = BuildPipeline.GetBuildTargetGroup(target);
+                
+                EditorUserBuildSettings.SwitchActiveBuildTargetAsync(group, target);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"{platform} is not supported. /n {ex.Message}");
+                return false;
             }
         }
 

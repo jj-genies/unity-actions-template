@@ -2,6 +2,13 @@ name: Sample Actions Build
 
 on:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: >
+          Comma separated list of platforms, the casing of the platform should be respected
+        required: true
+        default: 'iOS,Android,StandaloneOSX,StandaloneWindows64'
+        type: string
 
 jobs:
   build:
@@ -35,7 +42,7 @@ jobs:
           customImage: 'unityci/editor:2021.3.26f1-base-2'
           targetPlatform: 'StandaloneOSX'
           buildMethod: 'Editor.CustomBuildScript.Execute'
-          customParameters: -profile default -platform StandAloneOSX
+          customParameters: -profile default -platforms ${{ inputs.platforms }}
 
       # Output
       - uses: actions/upload-artifact@v2
