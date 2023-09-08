@@ -1,0 +1,44 @@
+name: Sample Actions Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Run Game Ci build
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      # Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PRIVATE_REPO_ACCESS_TOKEN }}
+          submodules: 'true'
+          lfs: 'true'
+
+      # Cache
+      - uses: actions/cache@v2
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Build
+      - name: Unity Custom Build
+        uses: game-ci/unity-builder@v2
+        env:
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          customImage: 'unityci/editor:2021.3.26f1-base-2'
+          targetPlatform: 'StandaloneOSX'
+          buildMethod: 'Editor.CustomBuildScript.Execute'
+          customParameters: -profile default -platform StandAloneOSX
+
+      # Output
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Custom-Build
+          path: SomeDirectory
