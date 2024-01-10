@@ -1,0 +1,50 @@
+name: Build using github runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Run Game Ci build
+    runs-on: [self-hosted]
+    steps:
+      # Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PRIVATE_REPO_ACCESS_TOKEN }}
+          submodules: 'true'
+          lfs: 'true'
+
+      # Build
+      - name: Build using Unity github runer
+        run: |
+          unity-editor \
+            -logfile /dev/stdout \
+            -batchmode \
+            -serial "${{ secrets.UNITY_SERIAL }}" \
+            -username "${{ secrets.UNITY_EMAIL }}" \
+            -password "${{ secrets.UNITY_PASSWORD }}" \
+            -customBuildName "$BUILD_NAME" \
+            -projectPath "$UNITY_PROJECT_PATH" \
+            -buildTarget "$BUILD_TARGET" \
+            -customBuildTarget "$BUILD_TARGET" \
+            -customBuildPath "$CUSTOM_BUILD_PATH" \
+            -executeMethod "$BUILD_METHOD" \
+            -buildVersion "$VERSION" \
+            $CUSTOM_PARAMETERS
+        
+        env:
+          BUILD_NAME: StandAloneOSX
+          UNITY_PROJECT_PATH: .
+          BUILD_TARGET: 'StandAloneOSX'
+          CUSTOM_BUILD_PATH: 'build/StandAloneOSX'
+          BUILD_METHOD: 'Editor.CustomBuildScript.Execute'
+          VERSION: '0.0.001'
+          CUSTOM_PARAMETERS: -profile SuperCoolConfig -platform StandAloneOSX
+
+      # Output
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Custom-Build
+          path: SomeDirectory
